@@ -8,26 +8,30 @@ go build
 
 ### install
 
+install as user service, so [`%h` specifier can be used][so_link].
+
 ```console
-cp telegram-fhome-bot.service /etc/systemd/system
+cp telegram-fhome-bot.service ~/.config/systemd/user
 ```
 
 ```console
-sudo systemd daemon-reload
+systemctl --user daemon-reload
 ```
 
 Now you can see that systemd sees it:
 
 ```console
-sudo systemctl list-unit-files --type service
+systemctl --user list-unit-files --type service
 ```
 
 ```console
-sudo systemctl enable telegram-fhome-bot.service
+systemctl --user enable telegram-fhome-bot.service
 ```
 
 ### view logs
 
 ```
-journalctl --unit telegram-fhome-bot.service
+journalctl --user --unit telegram-fhome-bot.service --follow
 ```
+
+[so_link]: https://serverfault.com/a/997608/590260
