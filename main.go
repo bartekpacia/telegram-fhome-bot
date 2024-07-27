@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 
 	"github.com/bartekpacia/fhome/api"
 	"github.com/go-telegram/bot"
@@ -120,51 +120,25 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	l.Info("handle", slog.String("user", user.Username), slog.String("text", msg.Text))
 
-	if msg.Text == "/enabled@FAndHomeBot" {
-		resp, err := fhomeClient.GetSystemConfig()
+	if strings.Contains(msg.Text, "brama") {
+		const gateId = 260
+		err := fhomeClient.SendEvent(gateId, api.ValueToggle)
 		if err != nil {
-			l.Error("error getting system config", slog.Any("error", err))
-			return
+			l.Error("error sending event", slog.Any("error", err))
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: msg.Chat.ID,
+				Text:   "Nie udało się otworzyć/zamknąć bramy\n" + err.Error(),
+			})
+		} else {
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: msg.Chat.ID,
+				Text:   "Tak jest! Otwieram/zamykam bramę :)",
+			})
 		}
-
-		cells := []struct {
-			Name  string
-			Value int
-		}{}
-		mdCells := resp.Response.MobileDisplayProperties.Cells
-		for _, cell := range mdCells {
-			if cell.DisplayType != api.Percentage && cell.MinValue == "0x6000" {
-				continue
-			}
-
-			val, err := api.RemapLighting(cell.Step)
-			if err != nil {
-				l.Error(
-					"error remapping lighting value",
-					slog.Group("cell", slog.String("id", cell.ID), slog.String("desc", cell.Desc)),
-					slog.Any("error", err),
-				)
-				continue
-			}
-
-			if val == 0 {
-				continue
-			}
-
-			cells = append(cells, struct {
-				Name  string
-				Value int
-			}{Name: cell.Desc, Value: val})
-		}
-
-		text := "Oto status oświetlenia:\n"
-		for _, cell := range cells {
-			text += fmt.Sprintf("• %s: %d%%\n", cell.Name, cell.Value)
-		}
-
+	} else {
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: msg.Chat.ID,
-			Text:   text,
+			Text:   "Sory ale nie rozumiem. Na razie umiem tylko otwierać/zamykać bramę",
 		})
 	}
 
