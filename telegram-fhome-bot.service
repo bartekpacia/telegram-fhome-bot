@@ -12,5 +12,5 @@ EnvironmentFile=%h/telegram-fhome-bot/.env
 Restart=on-failure
 RestartSec=10s
 
-#[Install]
-#WantedBy=multi-user.target
+[Install]
+WantedBy=default.target
