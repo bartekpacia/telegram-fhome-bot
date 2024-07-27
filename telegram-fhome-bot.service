@@ -2,8 +2,8 @@
 Description=Telegram bot that provides access to F&Home smart home system
 After=network-online.target
 Wants=network-online.target
-StartLimitIntervalSec=60
-StartLimitBurst=3
+#StartLimitIntervalSec=60
+#StartLimitBurst=3
 
 [Service]
 Type=simple
@@ -12,5 +12,5 @@ EnvironmentFile=%h/telegram-fhome-bot/.env
 Restart=on-failure
 RestartSec=10s
 
-[Install]
-WantedBy=multi-user.target
+#[Install]
+#WantedBy=multi-user.target
