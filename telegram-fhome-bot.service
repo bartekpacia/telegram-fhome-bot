@@ -8,6 +8,7 @@ StartLimitBurst=3
 [Service]
 Type=simple
 ExecStart=%h/telegram-fhome-bot/telegram-fhome-bot
+EnvironmentFile=%h/telegram-fhome-bot/.env
 Restart=on-failure
 RestartSec=10s
 
