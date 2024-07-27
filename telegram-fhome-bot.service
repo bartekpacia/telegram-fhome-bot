@@ -1,0 +1,13 @@
+[Unit]
+Description=Telegram bot that provides access to F&Home smart home system
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/telegram-fhome-bot/telegram-fhome-bot
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
