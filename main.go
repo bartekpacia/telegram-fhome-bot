@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -15,8 +16,9 @@ import (
 )
 
 var (
-	botUsername   string
-	allowedChatID int64
+	botUsername    string
+	allowedChatIDs []int64
+	allowedUserIDs []int64
 )
 
 var fhomeClient *api.Client
@@ -38,10 +40,23 @@ func main() {
 		slog.Error("TELEGRAM_BOT_USERNAME is empty")
 		os.Exit(1)
 	}
-	allowedChatID, err = strconv.ParseInt(os.Getenv("TELEGRAM_ALLOWED_CHAT_ID"), 10, 64)
-	if err != nil {
-		slog.Error("TELEGRAM_ALLOWED_CHAT_ID is invalid", slog.Any("error", err))
-		os.Exit(1)
+	allowedChatIDsStr := os.Getenv("TELEGRAM_ALLOWED_CHAT_IDS")
+	for _, chatIDStr := range strings.Split(allowedChatIDsStr, ",") {
+		chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
+		if err != nil {
+			slog.Error("Invalid chat ID", slog.Any("error", err))
+			os.Exit(1)
+		}
+		allowedChatIDs = append(allowedChatIDs, chatID)
+	}
+	allowedUserIDsStr := os.Getenv("TELEGRAM_ALLOWED_USER_IDS")
+	for _, userIDStr := range strings.Split(allowedUserIDsStr, ",") {
+		userID, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil {
+			slog.Error("Invalid user ID", slog.Any("error", err))
+			os.Exit(1)
+		}
+		allowedUserIDs = append(allowedUserIDs, userID)
 	}
 
 	fhomeClient, err = createFhomeClient()
@@ -66,23 +81,31 @@ func main() {
 }
 
 func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	l := slog.With(slog.Int64("id", update.ID))
+	l := slog.With(slog.Int64("update_id", update.ID))
 
 	l.Info("start processing update")
 	msg := update.Message
 	if msg == nil {
-		l.Info("update has no message, ignoring")
+		l.Info("update is not about a message, ignoring")
 		return
 	}
 
 	user := msg.From
-
-	l.Info("update has message", slog.String("text", msg.Text), slog.String("from_user", msg.From.Username))
+	l = l.With(
+		slog.Int64("chat_id", msg.Chat.ID),
+		slog.Group(
+			"from_user",
+			slog.String("username", msg.From.Username),
+			slog.String("name", msg.From.FirstName+" "+msg.From.LastName),
+			slog.Int64("id", msg.From.ID),
+		))
+	defer l.Info("end processing update")
+	l.Info("update is a message", slog.String("text", msg.Text))
 
 	// Check if the bot was added to the group. If yes, print group ID
 	if msg.NewChatMembers != nil && len(msg.NewChatMembers) > 0 {
 		if botUsername != msg.NewChatMembers[0].Username {
-			slog.Error("user was added to group, but it's not me", slog.String("bot_username", botUsername), slog.String("new_username", msg.NewChatMembers[0].Username))
+			l.Error("user was added to group, but it's not me", slog.String("bot_username", botUsername), slog.String("new_username", msg.NewChatMembers[0].Username))
 			// Some other user was added to our group. We don't care.
 			return
 		}
@@ -90,13 +113,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		l.Info(
 			"added to group",
 			slog.Group(
-				"added_by",
-				slog.String("username", user.Username),
-				slog.String("name", user.FirstName+" "+user.LastName),
-				slog.Int64("id", user.ID),
-			),
-			slog.Group(
-				"added_to_group",
+				"group",
 				slog.String("title", msg.Chat.Title),
 				slog.Int64("id", msg.Chat.ID),
 			),
@@ -108,19 +125,22 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		})
 	}
 
-	// Only make this bot work in my family group. Possibly more in the future.
-	if msg.Chat.ID != allowedChatID {
-		l.Error("ignoring message from chat", slog.Int64("chat_id", msg.Chat.ID), slog.String("chat_title", msg.Chat.Title))
+	validGroupChat := msg.Chat.Type == "group" && slices.Contains(allowedChatIDs, msg.Chat.ID)
+	validPrivateChat := msg.Chat.Type == "private" && slices.Contains(allowedUserIDs, user.ID)
+	if !validPrivateChat && !validGroupChat {
+		l.Error("ignoring message from chat", slog.Group(
+			"chat",
+			slog.Int64("id", msg.Chat.ID),
+			slog.String("title", msg.Chat.Title),
+		))
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: msg.Chat.ID,
-			Text:   "Currently I don't work in this group, sorry",
+			Text:   "Currently I don't work in this chat, sorry",
 		})
 		return
 	}
 
-	l.Info("handle", slog.String("user", user.Username), slog.String("text", msg.Text))
-
-	if strings.Contains(msg.Text, "brama") {
+	if strings.Contains(strings.ToLower(msg.Text), "brama") {
 		const gateId = 260
 		err := fhomeClient.SendEvent(gateId, api.ValueToggle)
 		if err != nil {
@@ -141,6 +161,4 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			Text:   "Sory ale nie rozumiem. Na razie umiem tylko otwierać/zamykać bramę",
 		})
 	}
-
-	l.Info("end processing update")
 }
