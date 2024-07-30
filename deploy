@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+
+if [ ! -f "./telegram-fhome-bot" ]; then
+    echo "telegram-fhome-bot binary not found"
+    exit 1
+fi
+
+USER=charlie
+HOST=vps1.pacia.tech
+
+# add private key
+
+# add host key to known_hosts
+if [ ! -z "$(grep "$HOST" ~/.ssh/known_hosts)" ]; then
+    echo "Host key for $HOST already exists"
+else
+    echo "Host key for $HOST not found, adding it"
+    echo "$HOST ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJTQNGIhgIXVLUJVhvnfyH5ij7JntQciYusQMoopKQI1" >> ~/.ssh/known_hosts
+fi
+
+ssh charlie@$HOST 'mkdir -p ~/telegram-fhome-bot'
+
+# copy binary
+scp -q -o LogLevel=QUIET ./telegram-fhome-bot charlie@$HOST:~/telegram-fhome-bot
+
+# copy service file and replace it
+scp -q -o LogLevel=QUIET ./telegram-fhome-bot.service charlie@$HOST:~/.config/systemd/user/
+
+# restart service
+ssh charlie@$HOST 'systemctl --user restart telegram-fhome-bot.service'
