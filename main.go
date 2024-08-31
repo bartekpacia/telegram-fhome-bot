@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
+	"math/rand/v2"
 	"os"
 	"os/signal"
 	"slices"
@@ -152,7 +154,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		} else {
 			b.SendMessage(ctx, &bot.SendMessageParams{
 				ChatID: msg.Chat.ID,
-				Text:   "Tak jest! Otwieram/zamykam bramę :)",
+				Text:   getConfirmationMessage(user.ID),
 			})
 		}
 	} else {
@@ -161,4 +163,39 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			Text:   "Sory ale nie rozumiem. Na razie umiem tylko otwierać/zamykać bramę",
 		})
 	}
+}
+
+func getConfirmationMessage(userID int64) string {
+	var name string
+	var noun string
+	if userID == 1028925187 { // tata
+		name = "Tomaszu"
+		noun = "Panie"
+	} else if userID == 1174832124 { // mama
+		name = "Elżbieto"
+		noun = "Pani"
+	} else if userID == 754149197 { // bartek
+		name = "Bartłomieju"
+		noun = "Panie"
+	} else if userID == 910335851 { // ola
+		name = "Aleksandro"
+		noun = "Pani"
+	}
+
+	var confirmationMessages = []string{
+		fmt.Sprintf("%s, Twoje życzenie jest dla mnie rozkazem! Otwieram/zamykam bramę :)", name),
+		fmt.Sprintf("%s, niech mi się stanie według Słowa twego. Brama zostanie otwarta!", name),
+		"Niechaj brama zostanie otwarta jak dusza Kordiana na szczycie Mont Blanc. Wstępuj!",
+		"O bramo, bramo, uchyl (lub zamknij) swe wrota!",
+		"Człowieku! Władza nad bramą w Twoich rękach! Otwieram/zamykam!",
+		"Miej serce i patrzaj w bramę. Już otwarta/zamknięta!",
+		fmt.Sprintf("Z rozkazu Twego, o %s, brama się poddaje!” Otwieram/zamykam!", noun),
+		"Lepiej późno niż wcale! Ale spokojnie, brama już otwarta/zamknięta!",
+		fmt.Sprintf("Jako iż wola Twoja, %s %s, brzmi potężnie, tak też brama otwarta/zamknięta zostanie!", noun, name),
+		"Niech żywi nie tracą nadziei! Bo brama już otwarta/zamknięta!",
+		fmt.Sprintf("%s, wiedz, że brama zawsze się Ciebie usłucha! Już otwieram/zamykam!", name),
+	}
+
+	msg := confirmationMessages[rand.IntN(len(confirmationMessages))]
+	return msg
 }

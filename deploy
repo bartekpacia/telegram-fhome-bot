@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -euo pipefail
+
 if [ ! -f "./telegram-fhome-bot" ]; then
     echo "telegram-fhome-bot binary not found"
     exit 1
@@ -23,8 +25,12 @@ ssh charlie@$HOST 'mkdir -p ~/telegram-fhome-bot'
 # copy binary
 scp -q -o LogLevel=QUIET ./telegram-fhome-bot charlie@$HOST:~/telegram-fhome-bot
 
+# copy .env
+scp -q -o LogLevel=QUIET ./.env charlie@$HOST:~/telegram-fhome-bot
+
 # copy service file and replace it
 scp -q -o LogLevel=QUIET ./telegram-fhome-bot.service charlie@$HOST:~/.config/systemd/user/
 
 # restart service
-ssh charlie@$HOST 'systemctl --user restart telegram-fhome-bot.service'
+
+ssh charlie@$HOST 'systemctl --user daemon-reload && systemctl --user restart telegram-fhome-bot.service'
