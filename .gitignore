@@ -1,5 +1,7 @@
 .DS_Store
-.env
+.vscode/
+.idea/
 
+.env
 # the generated binary
 /telegram-fhome-bot
