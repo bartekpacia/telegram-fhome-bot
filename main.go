@@ -105,7 +105,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	l.Info("update is a message", slog.String("text", msg.Text))
 
 	// Check if the bot was added to the group. If yes, print group ID
-	if msg.NewChatMembers != nil && len(msg.NewChatMembers) > 0 {
+	if len(msg.NewChatMembers) > 0 {
 		if botUsername != msg.NewChatMembers[0].Username {
 			l.Error("user was added to group, but it's not me", slog.String("bot_username", botUsername), slog.String("new_username", msg.NewChatMembers[0].Username))
 			// Some other user was added to our group. We don't care.
