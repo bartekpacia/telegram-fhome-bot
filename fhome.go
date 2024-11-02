@@ -23,7 +23,7 @@ func createFhomeClient() (*api.Client, error) {
 		return nil, fmt.Errorf("FHOME_RESOURCE_PASSWORD is empty")
 	}
 
-	client, err := api.NewClient()
+	client, err := api.NewClient(nil)
 	if err != nil {
 		slog.Error("failed to create API client", slog.Any("error", err))
 		return nil, err

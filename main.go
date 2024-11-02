@@ -123,7 +123,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: msg.Chat.ID,
-			Text:   "Siema, jestem botem i dodał mnie do tej grupy" + user.Username + "!",
+			Text:   "Hej, jestem botem! Do tej grupy dodał mnie " + user.Username + "!",
 		})
 	}
 
@@ -193,6 +193,9 @@ func getConfirmationMessage(userID int64) string {
 		"Lepiej późno niż wcale! Ale spokojnie, brama już otwarta/zamknięta!",
 		fmt.Sprintf("Jako iż wola Twoja, %s %s, brzmi potężnie, tak też brama otwarta/zamknięta zostanie!", noun, name),
 		"Niech żywi nie tracą nadziei! Bo brama już otwarta/zamknięta!",
+		"Tak jest! Wcale nie musisz być czarodziejem, aby otwierać bramy!",
+		fmt.Sprintf("Robi się, %s %s", noun, name),
+		"Zaklęcia zostały rzucone, a status bramy zostanie zmieniony!",
 		fmt.Sprintf("%s, wiedz, że brama zawsze się Ciebie usłucha! Już otwieram/zamykam!", name),
 	}
 
