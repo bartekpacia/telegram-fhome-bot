@@ -25,6 +25,8 @@ Now you can see that systemd sees it:
 systemctl --user list-unit-files --type service
 ```
 
+Don't forget to start/enable the service:
+
 ```console
 systemctl --user enable telegram-fhome-bot.service
 ```
