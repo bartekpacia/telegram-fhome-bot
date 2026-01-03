@@ -143,8 +143,8 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	if strings.Contains(strings.ToLower(msg.Text), "brama") {
-		const gateId = 260
-		err := fhomeClient.SendEvent(gateId, api.ValueToggle)
+		const gateID = 260
+		err := fhomeClient.SendEvent(gateID, api.ValueToggle)
 		if err != nil {
 			l.Error("error sending event", slog.Any("error", err))
 			b.SendMessage(ctx, &bot.SendMessageParams{
@@ -168,21 +168,26 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 func getConfirmationMessage(userID int64) string {
 	var name string
 	var noun string
-	if userID == 1028925187 { // tata
+	switch userID {
+	case 1028925187:
+		// tata
 		name = "Tomaszu"
 		noun = "Panie"
-	} else if userID == 1174832124 { // mama
+	case 1174832124:
+		// mama
 		name = "Elżbieto"
 		noun = "Pani"
-	} else if userID == 754149197 { // bartek
+	case 754149197:
+		// bartek
 		name = "Bartłomieju"
 		noun = "Panie"
-	} else if userID == 910335851 { // ola
+	case 910335851:
+		// ola
 		name = "Aleksandro"
 		noun = "Pani"
 	}
 
-	var confirmationMessages = []string{
+	confirmationMessages := []string{
 		fmt.Sprintf("%s, Twoje życzenie jest dla mnie rozkazem! Otwieram/zamykam bramę :)", name),
 		fmt.Sprintf("%s, niech mi się stanie według Słowa twego. Brama zostanie otwarta!", name),
 		"Niechaj brama zostanie otwarta jak dusza Kordiana na szczycie Mont Blanc. Wstępuj!",
