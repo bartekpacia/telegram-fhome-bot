@@ -1,16 +1,25 @@
+# Be sure to use `systemctl edit telegram-fhome-bot` to modify this service with an
+# override.conf because direct changes will be overwritten by package updates.
+
 [Unit]
 Description=Telegram bot that provides access to F&Home smart home system
-After=network-online.target
+Documentation=https://github.com/bartekpacia/telegram-fhome-bot
 Wants=network-online.target
-#StartLimitIntervalSec=60
-#StartLimitBurst=3
+After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=%h/telegram-fhome-bot/telegram-fhome-bot
-EnvironmentFile=%h/telegram-fhome-bot/.env
+User=telegram-fhome-bot
+Group=telegram-fhome-bot
+ExecStart=/usr/bin/telegram-fhome-bot
+EnvironmentFile=-/etc/telegram-fhome-bot/config
+WorkingDirectory=/var/lib/telegram-fhome-bot
+RuntimeDirectory=telegram-fhome-bot
+StateDirectory=telegram-fhome-bot
+LogsDirectory=telegram-fhome-bot
+
 Restart=on-failure
 RestartSec=10s
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

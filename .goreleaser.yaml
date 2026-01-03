@@ -21,6 +21,8 @@ archives:
       - telegram-fhome-bot
     files:
       - README.md
+      - telegram-fhome-bot.service
+      - telegram-fhome-bot.sysusers
     wrap_in_directory: true
     format_overrides:
       - goos: windows
@@ -65,6 +67,15 @@ aurs:
       cd "$pkgname-$pkgver"
       # bin
       install -Dm755 telegram-fhome-bot "${pkgdir}/usr/bin/telegram-fhome-bot"
+
+      # systemd service
+      install -Dm644 telegram-fhome-bot.service "${pkgdir}/usr/lib/systemd/system/telegram-fhome-bot.service"
+
+      # sysusers
+      install -Dm644 telegram-fhome-bot.sysusers "${pkgdir}/usr/lib/sysusers.d/telegram-fhome-bot.conf"
+
+      # config directory (empty, user creates config file)
+      install -dm755 "${pkgdir}/etc/telegram-fhome-bot"
 
       # completions
       ./telegram-fhome-bot completion bash > completion_bash
