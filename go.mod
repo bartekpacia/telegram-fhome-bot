@@ -1,6 +1,6 @@
 module github.com/bartekpacia/telegram-fhome-bot
 
-go 1.23
+go 1.25
 
 require (
 	github.com/bartekpacia/fhome v0.2.1
