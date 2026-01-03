@@ -1,0 +1,73 @@
+version: 2
+
+builds:
+  - id: telegram-fhome-bot
+    binary: telegram-fhome-bot
+    main: .
+    goos:
+      - windows
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+
+archives:
+  - id: telegram-fhome-bot
+    name_template: "telegram-fhome-bot_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    ids:
+      - telegram-fhome-bot
+    files:
+      - README.md
+    wrap_in_directory: true
+    format_overrides:
+      - goos: windows
+        formats: zip
+
+# Required for AUR sources
+source:
+  enabled: true
+
+changelog:
+  disable: true
+
+brews:
+  - name: telegram-fhome-bot
+    ids:
+      - telegram-fhome-bot
+    repository:
+      owner: bartekpacia
+      name: homebrew-tools
+    directory: Formula
+    homepage: https://github.com/bartekpacia/telegram-fhome-bot
+    description: Telegram bot for interacting with F&Home smart home devices
+    license: MIT
+    install: |
+      bin.install "telegram-fhome-bot"
+      generate_completions_from_executable(bin/"telegram-fhome-bot", "completion")
+
+aurs:
+  - name: telegram-fhome-bot-bin
+    ids:
+      - telegram-fhome-bot
+    homepage: https://github.com/bartekpacia/telegram-fhome-bot
+    description: Telegram bot for interacting with F&Home smart home devices
+    maintainers:
+      - Bartek Pacia <barpac02@gmail.com>
+    license: MIT
+    private_key: "{{ .Env.AUR_SSH_PRIVATE_KEY }}"
+    git_url: git@github.com:bartekpacia/aur.git
+    directory: telegram-fhome-bot-bin
+    commit_msg_template: update telegram-fhome-bot to {{ .Tag }}
+    package: |
+      cd "$pkgname-$pkgver"
+      # bin
+      install -Dm755 telegram-fhome-bot "${pkgdir}/usr/bin/telegram-fhome-bot"
+
+      # completions
+      ./telegram-fhome-bot completion bash > completion_bash
+      ./telegram-fhome-bot completion zsh > completion_zsh
+      install -Dm755 completion_bash "${pkgdir}/usr/share/bash-completion/completions/telegram-fhome-bot"
+      install -Dm755 completion_zsh "${pkgdir}/usr/share/zsh/site-functions/_telegram-fhome-bot"
