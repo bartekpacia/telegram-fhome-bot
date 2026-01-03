@@ -61,14 +61,14 @@ func main() {
 		allowedUserIDs = append(allowedUserIDs, userID)
 	}
 
-	fhomeClient, err = createFhomeClient()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	fhomeClient, err = createFhomeClient(ctx)
 	if err != nil {
 		slog.Error("error creating fhome client", slog.Any("error", err))
 		os.Exit(1)
 	}
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
 
 	opts := []bot.Option{
 		bot.WithDefaultHandler(handler),
@@ -79,7 +79,11 @@ func main() {
 		panic(err)
 	}
 
-	b.Start(ctx)
+	slog.Info("bot will start")
+	go b.Start(ctx)
+
+	<-ctx.Done()
+	slog.Info("shutdown: context canceled")
 }
 
 func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -144,7 +148,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	if strings.Contains(strings.ToLower(msg.Text), "brama") {
 		const gateID = 260
-		err := fhomeClient.SendEvent(gateID, api.ValueToggle)
+		err := fhomeClient.SendEvent(ctx, gateID, api.ValueToggle)
 		if err != nil {
 			l.Error("error sending event", slog.Any("error", err))
 			b.SendMessage(ctx, &bot.SendMessageParams{

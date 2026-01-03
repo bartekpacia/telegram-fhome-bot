@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -9,7 +10,7 @@ import (
 )
 
 // createFhomeClient returns a client that is ready to use.
-func createFhomeClient() (*api.Client, error) {
+func createFhomeClient(ctx context.Context) (*api.Client, error) {
 	email := os.Getenv("FHOME_EMAIL")
 	if email == "" {
 		return nil, fmt.Errorf("FHOME_EMAIL is empty")
@@ -51,7 +52,7 @@ func createFhomeClient() (*api.Client, error) {
 		)
 	}
 
-	err = client.OpenResourceSession(resourcePassword)
+	err = client.OpenResourceSession(ctx, resourcePassword)
 	if err != nil {
 		slog.Error("failed to open client to resource session", slog.Any("error", err))
 		return nil, err
