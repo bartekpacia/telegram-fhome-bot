@@ -4,9 +4,54 @@
 go build
 ```
 
+## Install
+
+**macOS**
+
+TBD
+
+**ArchLinux**
+
+Clone [my unofficial Arch User Repository (AUR)](https://github.com/bartekpacia/aur):
+
+```console
+git clone https://github.com/bartekpacia/aur
+```
+
+```
+cd telegram-fhome-bot
+```
+
+```console
+makepkg -si
+```
+
 ## systemd setup
 
-### install
+### as a systemd user-service
+
+You can also install as a systemd user service.
+The unit file would looks like this:
+
+```
+# /home/charlie/.config/systemd/user/telegram-fhome-bot.service
+[Unit]
+Description=Telegram bot that provides access to F&Home smart home system
+Wants=network-online.target
+After=network-online.target
+#StartLimitIntervalSec=60
+#StartLimitBurst=3
+
+[Service]
+Type=simple
+ExecStart=%h/telegram-fhome-bot/telegram-fhome-bot
+EnvironmentFile=%h/telegram-fhome-bot/.env
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+```
 
 - install as user service, so [`%h` specifier can be used][link1]
 - enable lingering (`loginctl enable-linger`) to avoid [death on logout][link2]
