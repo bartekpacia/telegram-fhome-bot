@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bartekpacia/fhome/api"
 	"github.com/go-telegram/bot"
@@ -21,6 +22,7 @@ var (
 	botUsername    string
 	allowedChatIDs []int64
 	allowedUserIDs []int64
+	metrics        = newMetricsRecorder()
 )
 
 var fhomeClient *api.Client
@@ -63,6 +65,12 @@ func main() {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+
+	metricsListenAddr := os.Getenv("METRICS_LISTEN_ADDR")
+	if metricsListenAddr == "" {
+		metricsListenAddr = defaultMetricsListenAddr
+	}
+	startMetricsServer(ctx, metricsListenAddr)
 
 	fhomeClient, err = createFhomeClient(ctx)
 	if err != nil {
@@ -148,7 +156,9 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	if strings.Contains(strings.ToLower(msg.Text), "brama") {
 		const gateID = 260
+		start := time.Now()
 		err := fhomeClient.SendEvent(ctx, gateID, api.ValueToggle)
+		metrics.recordToggle(err == nil, time.Since(start))
 		if err != nil {
 			l.Error("error sending event", slog.Any("error", err))
 			b.SendMessage(ctx, &bot.SendMessageParams{

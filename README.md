@@ -82,5 +82,18 @@ systemctl --user enable telegram-fhome-bot.service
 journalctl --user --unit telegram-fhome-bot.service --follow
 ```
 
+## Metrics
+
+The bot can expose Prometheus-compatible metrics on `/metrics`.
+
+Set `METRICS_LISTEN_ADDR` (for example `127.0.0.1:9108`) in your environment file.
+If unset, it defaults to `127.0.0.1:9108`.
+
+Available toggle metrics:
+
+- `telegram_fhome_bot_gate_toggle_events_total{result="success|error"}`
+- `telegram_fhome_bot_gate_toggle_duration_seconds{result="success|error"}` (`_bucket`, `_sum`, `_count`)
+- `telegram_fhome_bot_gate_toggle_last_unix_time_seconds{result="success|error"}`
+
 [link1]: https://serverfault.com/a/997608/590260
 [link2]: https://unix.stackexchange.com/q/521538/417321
