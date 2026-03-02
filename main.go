@@ -70,7 +70,7 @@ func main() {
 	if metricsListenAddr == "" {
 		metricsListenAddr = defaultMetricsListenAddr
 	}
-	startMetricsServer(ctx, metricsListenAddr, metrics)
+	startMetricsServer(ctx, metricsListenAddr)
 
 	fhomeClient, err = createFhomeClient(ctx)
 	if err != nil {

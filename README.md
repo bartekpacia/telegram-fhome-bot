@@ -92,8 +92,7 @@ If unset, it defaults to `127.0.0.1:9108`.
 Available toggle metrics:
 
 - `telegram_fhome_bot_gate_toggle_events_total{result="success|error"}`
-- `telegram_fhome_bot_gate_toggle_duration_seconds_total{result="success|error"}`
-- `telegram_fhome_bot_gate_toggle_duration_seconds_count{result="success|error"}`
+- `telegram_fhome_bot_gate_toggle_duration_seconds{result="success|error"}` (`_bucket`, `_sum`, `_count`)
 - `telegram_fhome_bot_gate_toggle_last_unix_time_seconds{result="success|error"}`
 
 [link1]: https://serverfault.com/a/997608/590260

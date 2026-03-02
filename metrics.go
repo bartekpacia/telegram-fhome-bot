@@ -2,83 +2,77 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
-	"sync/atomic"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const defaultMetricsListenAddr = "127.0.0.1:9108"
 
+const (
+	metricsResultLabel = "result"
+	metricsResultError = "error"
+	metricsResultOK    = "success"
+)
+
 type metricsRecorder struct {
-	toggleSuccessTotal      atomic.Uint64
-	toggleErrorTotal        atomic.Uint64
-	toggleSuccessDurationNs atomic.Uint64
-	toggleErrorDurationNs   atomic.Uint64
-	toggleSuccessLastUnix   atomic.Int64
-	toggleErrorLastUnix     atomic.Int64
+	toggleEventsTotal         *prometheus.CounterVec
+	toggleDurationSeconds     *prometheus.HistogramVec
+	toggleLastUnixTimeSeconds *prometheus.GaugeVec
 }
 
 func newMetricsRecorder() *metricsRecorder {
-	return &metricsRecorder{}
+	m := &metricsRecorder{
+		toggleEventsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "telegram_fhome_bot_gate_toggle_events_total",
+				Help: "Total number of requested gate toggles.",
+			},
+			[]string{metricsResultLabel},
+		),
+		toggleDurationSeconds: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "telegram_fhome_bot_gate_toggle_duration_seconds",
+				Help:    "Duration of sending gate toggle events to F&Home.",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{metricsResultLabel},
+		),
+		toggleLastUnixTimeSeconds: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "telegram_fhome_bot_gate_toggle_last_unix_time_seconds",
+				Help: "Unix timestamp of the last gate toggle event.",
+			},
+			[]string{metricsResultLabel},
+		),
+	}
+
+	prometheus.MustRegister(
+		m.toggleEventsTotal,
+		m.toggleDurationSeconds,
+		m.toggleLastUnixTimeSeconds,
+	)
+
+	return m
 }
 
 func (m *metricsRecorder) recordToggle(success bool, duration time.Duration) {
-	durNs := uint64(duration.Nanoseconds())
-
+	result := metricsResultError
 	if success {
-		m.toggleSuccessTotal.Add(1)
-		m.toggleSuccessDurationNs.Add(durNs)
-		m.toggleSuccessLastUnix.Store(time.Now().Unix())
-		return
+		result = metricsResultOK
 	}
 
-	m.toggleErrorTotal.Add(1)
-	m.toggleErrorDurationNs.Add(durNs)
-	m.toggleErrorLastUnix.Store(time.Now().Unix())
+	m.toggleEventsTotal.WithLabelValues(result).Inc()
+	m.toggleDurationSeconds.WithLabelValues(result).Observe(duration.Seconds())
+	m.toggleLastUnixTimeSeconds.WithLabelValues(result).Set(float64(time.Now().Unix()))
 }
 
-func (m *metricsRecorder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_, _ = w.Write([]byte("method not allowed"))
-		return
-	}
-
-	successTotal := m.toggleSuccessTotal.Load()
-	errorTotal := m.toggleErrorTotal.Load()
-	successDurationSecondsTotal := float64(m.toggleSuccessDurationNs.Load()) / float64(time.Second)
-	errorDurationSecondsTotal := float64(m.toggleErrorDurationNs.Load()) / float64(time.Second)
-	successLastUnix := m.toggleSuccessLastUnix.Load()
-	errorLastUnix := m.toggleErrorLastUnix.Load()
-
-	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
-
-	_, _ = fmt.Fprintln(w, "# HELP telegram_fhome_bot_gate_toggle_events_total Total number of requested gate toggles.")
-	_, _ = fmt.Fprintln(w, "# TYPE telegram_fhome_bot_gate_toggle_events_total counter")
-	_, _ = fmt.Fprintf(w, "telegram_fhome_bot_gate_toggle_events_total{result=\"success\"} %d\n", successTotal)
-	_, _ = fmt.Fprintf(w, "telegram_fhome_bot_gate_toggle_events_total{result=\"error\"} %d\n", errorTotal)
-
-	_, _ = fmt.Fprintln(w, "# HELP telegram_fhome_bot_gate_toggle_duration_seconds_total Total duration spent sending gate toggle events.")
-	_, _ = fmt.Fprintln(w, "# TYPE telegram_fhome_bot_gate_toggle_duration_seconds_total counter")
-	_, _ = fmt.Fprintf(w, "telegram_fhome_bot_gate_toggle_duration_seconds_total{result=\"success\"} %g\n", successDurationSecondsTotal)
-	_, _ = fmt.Fprintf(w, "telegram_fhome_bot_gate_toggle_duration_seconds_total{result=\"error\"} %g\n", errorDurationSecondsTotal)
-
-	_, _ = fmt.Fprintln(w, "# HELP telegram_fhome_bot_gate_toggle_duration_seconds_count Number of measured gate toggle durations.")
-	_, _ = fmt.Fprintln(w, "# TYPE telegram_fhome_bot_gate_toggle_duration_seconds_count counter")
-	_, _ = fmt.Fprintf(w, "telegram_fhome_bot_gate_toggle_duration_seconds_count{result=\"success\"} %d\n", successTotal)
-	_, _ = fmt.Fprintf(w, "telegram_fhome_bot_gate_toggle_duration_seconds_count{result=\"error\"} %d\n", errorTotal)
-
-	_, _ = fmt.Fprintln(w, "# HELP telegram_fhome_bot_gate_toggle_last_unix_time_seconds Unix timestamp of the last gate toggle event.")
-	_, _ = fmt.Fprintln(w, "# TYPE telegram_fhome_bot_gate_toggle_last_unix_time_seconds gauge")
-	_, _ = fmt.Fprintf(w, "telegram_fhome_bot_gate_toggle_last_unix_time_seconds{result=\"success\"} %d\n", successLastUnix)
-	_, _ = fmt.Fprintf(w, "telegram_fhome_bot_gate_toggle_last_unix_time_seconds{result=\"error\"} %d\n", errorLastUnix)
-}
-
-func startMetricsServer(ctx context.Context, addr string, metrics *metricsRecorder) {
+func startMetricsServer(ctx context.Context, addr string) {
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", metrics)
+	mux.Handle("/metrics", promhttp.Handler())
 
 	server := &http.Server{
 		Addr:    addr,
